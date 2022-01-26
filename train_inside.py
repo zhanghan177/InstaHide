@@ -60,7 +60,8 @@ parser.add_argument('--resume',
 parser.add_argument('--klam', default=4, type=int, help='number of lambdas')
 parser.add_argument('--mode', default='instahide',
                     type=str, help='InsatHide or Mixup')
-parser.add_argument('--upper', default=0.65, type=float, help='the upper bound of any coefficient')
+parser.add_argument('--upper', default=0.65, type=float,
+                    help='the upper bound of any coefficient')
 
 
 args = parser.parse_args()
@@ -237,6 +238,11 @@ def adjust_learning_rate(optimizer, epoch):
             lr /= 10
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
+    if args.data == 'mnist':
+        if epoch >= 15:
+            lr /= 10
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
 
 
 def main():
@@ -253,7 +259,11 @@ def main():
     print('==> Preparing data..')
 
     cifar_normalize = transforms.Normalize(
-        (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+        (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
+    )
+    mnist_normalize = transforms.Normalize(
+        (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)
+    )
 
     if args.augment:
         transform_cifar_train = transforms.Compose([
@@ -262,15 +272,34 @@ def main():
             transforms.ToTensor(),
             cifar_normalize
         ])
+
+        transform_mnist_train = transforms.Compose([
+            transforms.Grayscale(3),
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            mnist_normalize
+        ])
     else:
         transform_cifar_train = transforms.Compose([
             transforms.ToTensor(),
             cifar_normalize
         ])
 
+        transform_mnist_train = transforms.Compose([
+            transforms.Grayscale(3),
+            transforms.ToTensor(),
+            mnist_normalize
+        ])
+
     transform_cifar_test = transforms.Compose([
         transforms.ToTensor(),
         cifar_normalize
+    ])
+    transform_mnist_test = transforms.Compose([
+        transforms.Grayscale(3),
+        transforms.ToTensor(),
+        mnist_normalize
     ])
 
     if args.data == 'cifar10':
@@ -284,6 +313,18 @@ def main():
                                    transform=transform_cifar_test)
         num_class = 10
     # You can add your own dataloader and preprocessor here.
+    elif args.data == 'mnist':
+        trainset = datasets.MNIST(root='./data',
+                                  train=True,
+                                  download=True,
+                                  transform=transform_mnist_train)
+        testset = datasets.MNIST(root='./data',
+                                 train=False,
+                                 download=True,
+                                 transform=transform_mnist_test)
+        num_class = 10
+    else:
+        raise NotImplementedError('Unsupported dataset')
 
     trainloader = torch.utils.data.DataLoader(trainset,
                                               batch_size=len(trainset),
