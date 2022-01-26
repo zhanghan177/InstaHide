@@ -59,7 +59,7 @@ parser.add_argument('--resume',
 # InstaHide configurations
 parser.add_argument('--klam', default=4, type=int, help='number of lambdas')
 parser.add_argument('--mode', default='instahide',
-                    type=str, help='InsatHide, Mixup or SharedKey')
+                    type=str, help='InsatHide or Mixup')
 parser.add_argument('--upper', default=0.65, type=float,
                     help='the upper bound of any coefficient')
 
@@ -232,14 +232,14 @@ def adjust_learning_rate(optimizer, epoch):
     """ Decrease learning rate at certain epochs. """
     lr = args.lr
     if args.data == 'cifar10':
-        if epoch == 100:
+        if epoch >= 100:
             lr /= 10
-        if epoch == 150:
+        if epoch >= 150:
             lr /= 10
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
     if args.data == 'mnist':
-        if epoch == 15:
+        if epoch >= 15:
             lr /= 10
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
